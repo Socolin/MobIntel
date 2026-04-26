@@ -1,0 +1,12 @@
+## Interface: 205005
+## Title: MobIntel
+## Notes: Add personal notes to mobs shown in tooltips
+## Version: 1.0.0
+## SavedVariables: MobIntelDB
+
+Core.lua
+Data.lua
+Command.lua
+Commands/CommandAdd.lua
+Commands/CommandClear.lua
+Tooltip.lua
