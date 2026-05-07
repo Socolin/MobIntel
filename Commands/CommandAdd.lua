@@ -6,34 +6,39 @@ function MobIntel.commands.add(msg)
     elseif kind == "spawn"
     then
         MobIntel.commands.addNpcSpawnNote(args)
+    elseif kind == "area"
+    then
+        MobIntel.commands.addAreaNote(args)
     end
 end
 
 function MobIntel.commands.addNpcNote(args)
-    local npcId = MobIntel.utils.getTargetNpcId()
-    if not npcId
+    local npcName = MobIntel.utils.getTargetNpcName() or ""
+    local npcInfo = MobIntel.utils.getTargetNpcInfo()
+    if not npcInfo
     then
         MobIntel.utils.printError("No target")
-        return
+        return nil
     end
     if not args
     then
         MobIntel.utils.printError("No text given")
-        MobIntel.commands.printHelp()
+        MobIntel.commands.printAddHelp()
         return
     end
 
-    local creatureNote = MobIntel.data.creature.createNote(npcId, args)
+    local creatureNote = MobIntel.data.creature.createNote(npcInfo, npcName, args)
     MobIntel.data.creature.addNote(creatureNote)
     MobIntel.utils.printSuccess("Npc Note Added")
 end
 
 function MobIntel.commands.addNpcSpawnNote(args)
-    local npcId = MobIntel.utils.getTargetNpcId()
-    if not npcId
+    local npcName = MobIntel.utils.getTargetNpcName() or ""
+    local npcInfo = MobIntel.utils.getTargetNpcInfo()
+    if not npcInfo
     then
         MobIntel.utils.printError("No target")
-        return
+        return nil
     end
 
     local range, note = strsplit(" ", args, 2)
@@ -41,16 +46,31 @@ function MobIntel.commands.addNpcSpawnNote(args)
     if not note
     then
         MobIntel.utils.printError("No text given")
-        MobIntel.commands.printHelp()
+        MobIntel.commands.printAddHelp()
         return
     end
 
-    local creatureNote = MobIntel.data.creature.createSpawnNote(npcId, range, note)
+
+    local _, x, y = MobIntel.utils.getPlayerPosition();
+    if not x and not y
+    then
+        MobIntel.utils.printError("Position unknown, not usable in dungeon")
+        return
+    end
+    print(x, y)
+
+    local creatureNote = MobIntel.data.creature.createSpawnNote(npcInfo, npcName, range, note)
     MobIntel.data.creature.addNote(creatureNote)
     MobIntel.utils.printSuccess("Spawn Note Added")
 end
 
-function MobIntel.commands.printHelp()
+function MobIntel.commands.addAreaNote(args)
+    local range, note = strsplit(" ", args, 2)
+    local areaNote = MobIntel.data.area.createNote()
+    MobIntel.data.area.addNote(areaNote)
+end
+
+function MobIntel.commands.printAddHelp()
     MobIntel.utils.printSuccess("/mi add <kind>")
     MobIntel.utils.printSuccess("/mi add npc <note>: Add a note on the targeted npc")
     MobIntel.utils.printSuccess("/mi add spawn <range> <note>: Add a note on the targeted npc at a given location within given range")

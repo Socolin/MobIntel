@@ -18,6 +18,18 @@ function MobIntel.utils.getTargetNpcId()
     return MobIntel.utils.getNpcId(UnitGUID("target"))
 end
 
+function MobIntel.utils.getTargetNpcInfo()
+    return MobIntel.utils.getNpcInfo(UnitGUID("target"))
+end
+
+function MobIntel.utils.getTargetNpcName()
+    return UnitName("target")
+end
+
+function MobIntel.utils.createRandomId()
+    return time() .. "_" .. math.random(1, 999999)
+end
+
 function MobIntel.utils.formatPlayerName(playerGuid)
     local name, englishClass, localizedRace, englishRace, sex, name = GetPlayerInfoByGUID(playerGuid)
     if not name then
@@ -36,13 +48,25 @@ end
 
 function MobIntel.utils.getPlayerPosition()
     local mapId = C_Map.GetBestMapForUnit("player")
+    if not mapId
+    then
+        return nil
+    end
     local position = C_Map.GetPlayerMapPosition(mapId, "player")
+    if not position
+    then
+        return nil
+    end
     return mapId, position.x, position.y
 end
 
 function MobIntel.utils.getDistanceTo(mapId, x, y)
     local playerMapId, playerX, playerY = MobIntel.utils.getPlayerPosition()
     if playerMapId ~= mapId
+    then
+        return nil
+    end
+    if not playerX and not playerY
     then
         return nil
     end
@@ -75,4 +99,23 @@ function MobIntel.utils.getNpcId(guid)
     end
 
     return npcId;
+end
+
+
+function MobIntel.utils.getNpcInfo(guid)
+    if not guid then
+        return nil
+    end
+
+    local unitType, _, _, mapId, _, npcId = strsplit("-", guid)
+    if unitType ~= "Creature"
+    then
+        return nil
+    end
+
+    return {
+        guid = guid,
+        npcId = npcId,
+        mapId = mapId
+    }
 end

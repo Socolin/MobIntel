@@ -9,4 +9,8 @@ Data.lua
 Command.lua
 Commands/CommandAdd.lua
 Commands/CommandClear.lua
+Commands/CommandDelete.lua
+Commands/CommandList.lua
 Tooltip.lua
+Area.lua
+Config.lua
