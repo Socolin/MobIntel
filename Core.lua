@@ -119,3 +119,15 @@ function MobIntel.utils.getNpcInfo(guid)
         mapId = mapId
     }
 end
+
+function MobIntel.utils.formatNote(text, ident)
+    if not text or text == "" then return "" end
+    local replaced = text:gsub("{spell:(%d+)}", function(id)
+        local name, _, texture = GetSpellInfo(tonumber(id))
+        if texture then
+            return "|T" .. texture .. ":16:16|t "
+        end
+        return "{spell:" .. id .. "}"
+    end)
+    return ident .. replaced:gsub("\n", "\n" .. ident)
+end

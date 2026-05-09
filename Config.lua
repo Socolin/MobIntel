@@ -131,12 +131,191 @@ cancelBtn:SetScript("OnClick", function()
     editDialog:Hide()
 end)
 
+-- Preview panel (sits below the scroll frame, hidden by default)
+local previewFrame = CreateFrame("Frame", nil, editDialog, "InsetFrameTemplate")
+previewFrame:SetPoint("TOPLEFT", editScrollFrame, "TOPLEFT")
+previewFrame:SetPoint("BOTTOMRIGHT", editScrollFrame, "BOTTOMRIGHT")
+previewFrame:Hide()
+
+local previewLabel = previewFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+previewLabel:SetPoint("TOPLEFT", previewFrame, "TOPLEFT", 6, -6)
+previewLabel:SetPoint("BOTTOMRIGHT", previewFrame, "BOTTOMRIGHT", -6, 6)
+previewLabel:SetJustifyH("LEFT")
+previewLabel:SetJustifyV("TOP")
+
+local previewBtn = CreateFrame("Button", nil, editDialog, "UIPanelButtonTemplate")
+previewBtn:SetSize(80, 25)
+previewBtn:SetPoint("RIGHT", cancelBtn, "LEFT", -5, 0)
+previewBtn:SetText("Preview")
+previewBtn:SetScript("OnClick", function()
+    if previewFrame:IsShown() then
+        previewFrame:Hide()
+        editScrollFrame:Show()
+        previewBtn:SetText("Preview")
+    else
+        previewLabel:SetText(MobIntel.utils.formatNote(editBox:GetText(), ""))
+        previewFrame:Show()
+        editScrollFrame:Hide()
+        previewBtn:SetText("Edit")
+    end
+end)
+
 function editDialog:open(currentText, onSave)
     self.onSave = onSave
     editBox:SetText(currentText or "")
+    previewFrame:Hide()
+    editScrollFrame:Show()
+    previewBtn:SetText("Preview")
     self:Show()
     editBox:SetFocus()
 end
+
+-- Spell / icon picker
+local spellPicker = CreateFrame("Frame", "MobIntelSpellPicker", UIParent, "BasicFrameTemplateWithInset")
+spellPicker:SetSize(320, 460)
+spellPicker:SetMovable(true)
+spellPicker:EnableMouse(true)
+spellPicker:RegisterForDrag("LeftButton")
+spellPicker:SetScript("OnDragStart", spellPicker.StartMoving)
+spellPicker:SetScript("OnDragStop", spellPicker.StopMovingOrSizing)
+spellPicker:SetFrameStrata("DIALOG")
+spellPicker:Hide()
+
+spellPicker.title = spellPicker:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+spellPicker.title:SetPoint("LEFT", spellPicker.TitleBg, "LEFT", 5, 0)
+spellPicker.title:SetText("Select Icon")
+
+local pickerSearch = CreateFrame("EditBox", "MobIntelSpellPickerSearch", spellPicker, "SearchBoxTemplate")
+pickerSearch:SetPoint("TOPLEFT", spellPicker, "TOPLEFT", 8, -32)
+pickerSearch:SetPoint("TOPRIGHT", spellPicker, "TOPRIGHT", -28, -32)
+pickerSearch:SetHeight(20)
+pickerSearch:SetAutoFocus(false)
+
+local pickerScroll = CreateFrame("ScrollFrame", "MobIntelSpellPickerScroll", spellPicker, "UIPanelScrollFrameTemplate")
+pickerScroll:SetPoint("TOPLEFT", spellPicker, "TOPLEFT", 8, -58)
+pickerScroll:SetPoint("BOTTOMRIGHT", spellPicker, "BOTTOMRIGHT", -28, 8)
+
+local pickerContent = CreateFrame("Frame", nil, pickerScroll)
+pickerContent:SetWidth(270)
+pickerContent:SetHeight(1)
+pickerScroll:SetScrollChild(pickerContent)
+
+local pickerIconFrames = {}
+local ICON_SIZE     = 36
+local ICON_PADDING  = 4
+local ICONS_PER_ROW = 6
+
+local pickerOnSelect = nil
+
+local function addIconButton(texture, tooltipText, yOffset, col, spellId)
+    local btn = CreateFrame("Button", nil, pickerContent)
+    btn:SetPoint("TOPLEFT", pickerContent, "TOPLEFT",
+        4 + col * (ICON_SIZE + ICON_PADDING), -yOffset)
+    btn:SetSize(ICON_SIZE, ICON_SIZE)
+
+    local ico = btn:CreateTexture(nil, "ARTWORK")
+    ico:SetAllPoints()
+    ico:SetTexture(texture)
+
+    local hl = btn:CreateTexture(nil, "HIGHLIGHT")
+    hl:SetAllPoints()
+    hl:SetTexture("Interface\\Buttons\\ButtonHilight-Square")
+    hl:SetBlendMode("ADD")
+
+    btn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(tooltipText)
+        GameTooltip:Show()
+    end)
+    btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    btn:SetScript("OnClick", function()
+        if pickerOnSelect then pickerOnSelect(spellId) end
+        spellPicker:Hide()
+    end)
+
+    table.insert(pickerIconFrames, btn)
+end
+
+local function buildIconGrid(filter)
+    for _, f in ipairs(pickerIconFrames) do
+        f:Hide()
+    end
+    wipe(pickerIconFrames)
+
+    local yOffset = 4
+    local col     = 0
+
+    -- If the input is a number treat it as a spell ID — this reliably resolves
+    -- any spell including monster-only spells not in the player's spell cache.
+    -- Name lookup via GetSpellInfo only works for spells the client has cached
+    -- (i.e. spells the player learned or recently encountered in a tooltip).
+    if filter and filter ~= "" then
+        local spellId = tonumber(filter)
+        local name, _, texture = GetSpellInfo(spellId or filter)
+        if name and texture then
+            addIconButton(texture, name, yOffset, col, spellId)
+            col = col + 1
+            if col >= ICONS_PER_ROW then
+                col = 0
+                yOffset = yOffset + ICON_SIZE + ICON_PADDING
+            end
+        end
+    end
+
+    -- Walk the player spellbook, filtered by name when a search term is set
+    local filterLower = filter and filter:lower() or ""
+    local numTabs = GetNumSpellTabs()
+    for tabIndex = 1, numTabs do
+        local _, _, tabOffset, tabNumEntries = GetSpellTabInfo(tabIndex)
+        for slot = tabOffset + 1, tabOffset + tabNumEntries do
+            local spellType, spellId = GetSpellBookItemInfo(slot, BOOKTYPE_SPELL)
+            if spellType == "SPELL" then
+                local spellName = GetSpellBookItemName(slot, BOOKTYPE_SPELL)
+                local texture   = GetSpellBookItemTexture(slot, BOOKTYPE_SPELL)
+                if texture and spellName then
+                    local matches = filterLower == "" or spellName:lower():find(filterLower, 1, true)
+                    if matches then
+                        addIconButton(texture, spellName, yOffset, col, spellId)
+                        col = col + 1
+                        if col >= ICONS_PER_ROW then
+                            col = 0
+                            yOffset = yOffset + ICON_SIZE + ICON_PADDING
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if col > 0 then
+        yOffset = yOffset + ICON_SIZE + ICON_PADDING
+    end
+    pickerContent:SetHeight(math.max(yOffset + 4, 1))
+end
+
+pickerSearch:SetScript("OnTextChanged", function(self)
+    buildIconGrid(self:GetText())
+    pickerScroll:SetVerticalScroll(0)
+end)
+
+function spellPicker:open(onSelect)
+    pickerOnSelect = onSelect
+    self:ClearAllPoints()
+    self:SetPoint("LEFT", editDialog, "RIGHT", 5, 0)
+    pickerSearch:SetText("")
+    buildIconGrid("")
+    self:Show()
+end
+
+local addSpellBtn = CreateFrame("Button", nil, editDialog, "UIPanelButtonTemplate")
+addSpellBtn:SetSize(90, 25)
+addSpellBtn:SetPoint("BOTTOMLEFT", editDialog, "BOTTOMLEFT", 10, 10)
+addSpellBtn:SetText("Add Icon")
+addSpellBtn:SetScript("OnClick", function()
+    spellPicker:open(function(spellId)
+        editBox:Insert("{spell:" .. tostring(spellId) .. "}")
+    end)
+end)
 
 StaticPopupDialogs["MOBINTEL_CONFIRM_DELETE_NOTE"] = {
     text = "Delete this note?",
@@ -150,6 +329,7 @@ StaticPopupDialogs["MOBINTEL_CONFIRM_DELETE_NOTE"] = {
     whileDead = true,
     hideOnEscape = true,
 }
+
 
 local function createNotesPanel(parent)
     local panel = CreateFrame("Frame", nil, parent)
@@ -252,7 +432,7 @@ local function createNotesPanel(parent)
         textLabel:SetPoint("RIGHT", editBtn, "LEFT", -8, 0)
         textLabel:SetJustifyH("LEFT")
         textLabel:SetMaxLines(1)
-        textLabel:SetText(note.text or "")
+        textLabel:SetText(MobIntel.utils.formatNote(note.text or "", ""))
 
         table.insert(rows, f)
         return yOffset + 28

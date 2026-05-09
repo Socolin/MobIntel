@@ -23,6 +23,7 @@ function MobIntel.data.creature.createNote(npcInfo, npcName, text)
     creatureNote.mapId = npcInfo.mapId
     creatureNote.npcName = npcName
     creatureNote.createdDate = time()
+    creatureNote.lastEditDate = time()
     creatureNote.shared = MobIntelDB.settings.autoShare == true
 
     return creatureNote
@@ -39,6 +40,7 @@ function MobIntel.data.creature.createSpawnNote(npcInfo, npcName, range, text)
     creatureNote.mapId = npcInfo.mapId
     creatureNote.npcName = npcName
     creatureNote.createdDate = time()
+    creatureNote.lastEditDate = time()
     creatureNote.shared = MobIntelDB.settings.autoShare == true
     local mapId, x, y = MobIntel.utils.getPlayerPosition();
     creatureNote.spawn = {

@@ -17,10 +17,10 @@ GameTooltip:HookScript("OnTooltipSetUnit", function(tooltip)
                 local distance = MobIntel.utils.getDistanceTo(spawn.mapId, spawn.x, spawn.y)
                 if distance and distance < spawn.range
                 then
-                    tooltip:AddLine("  [" .. MobIntel.utils.formatPlayerName(value.author) .. "] " .. value.text )
+                    tooltip:AddLine(MobIntel.utils.formatNote("[" .. MobIntel.utils.formatPlayerName(value.author) .. "] " .. value.text, "  "))
                 end
             else
-                tooltip:AddLine("  [" .. MobIntel.utils.formatPlayerName(value.author) .. "] " .. value.text )
+                tooltip:AddLine(MobIntel.utils.formatNote("[" .. MobIntel.utils.formatPlayerName(value.author) .. "] " .. value.text, "  "))
             end
         end
     end
