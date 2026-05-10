@@ -1,60 +1,76 @@
 -- GUID map IDs are old-style continent/instance IDs, not C_Map UI map IDs
 local GUID_MAP_NAMES = {
+    -- Continents
     ["0"]   = "Eastern Kingdoms",
     ["1"]   = "Kalimdor",
     ["530"] = "Outland",
-    -- Classic instances
+    -- Battlegrounds
+    ["30"]  = "Alterac Valley",
+    ["489"] = "Warsong Gulch",
+    ["529"] = "Arathi Basin",
+    ["559"] = "Nagrand Arena",
+    ["562"] = "Blade's Edge Arena",
+    ["566"] = "Eye of the Storm",
+    ["572"] = "Ruins of Lordaeron",
+    -- Classic dungeons
     ["33"]  = "Shadowfang Keep",
-    ["34"]  = "Stormwind Stockade",
-    ["36"]  = "Deadmines",
+    ["34"]  = "The Stockade",
+    ["36"]  = "The Deadmines",
     ["43"]  = "Wailing Caverns",
     ["47"]  = "Razorfen Kraul",
     ["48"]  = "Blackfathom Deeps",
     ["70"]  = "Uldaman",
     ["90"]  = "Gnomeregan",
-    ["109"] = "Sunken Temple",
+    ["109"] = "The Temple of Atal'Hakkar",
     ["129"] = "Razorfen Downs",
     ["189"] = "Scarlet Monastery",
     ["209"] = "Zul'Farrak",
     ["229"] = "Blackrock Spire",
     ["230"] = "Blackrock Depths",
-    ["249"] = "Onyxia's Lair",
+    ["269"] = "Caverns of Time",
     ["289"] = "Scholomance",
-    ["309"] = "Zul'Gurub",
     ["329"] = "Stratholme",
     ["349"] = "Maraudon",
     ["389"] = "Ragefire Chasm",
-    ["409"] = "Molten Core",
     ["429"] = "Dire Maul",
+    -- Classic raids
+    ["249"] = "Onyxia's Lair",
+    ["309"] = "Zul'Gurub",
+    ["409"] = "Molten Core",
     ["469"] = "Blackwing Lair",
-    ["489"] = "Warsong Gulch",
     ["509"] = "Ruins of Ahn'Qiraj",
-    ["529"] = "Arathi Basin",
     ["531"] = "Temple of Ahn'Qiraj",
     ["533"] = "Naxxramas",
-    -- TBC instances
-    ["532"] = "Karazhan",
-    ["534"] = "Hyjal Summit",
+    -- TBC dungeons — Hellfire Citadel
     ["540"] = "Hellfire Ramparts",
-    ["542"] = "Blood Furnace",
+    ["542"] = "The Blood Furnace",
     ["543"] = "Hellfire Citadel",
-    ["544"] = "Steamvault",
-    ["545"] = "The Underbog",
-    ["546"] = "The Slave Pens",
-    ["547"] = "Escape from Durnholde",
+    -- TBC dungeons — Coilfang Reservoir
+    ["545"] = "The Steamvault",
+    ["546"] = "The Underbog",
+    ["547"] = "The Slave Pens",
+    -- TBC dungeons — Caverns of Time
+    ["560"] = "Old Hillsbrad Foothills",
+    -- TBC dungeons — Tempest Keep
     ["552"] = "The Arcatraz",
     ["553"] = "The Botanica",
     ["554"] = "The Mechanar",
+    -- TBC dungeons — Auchindoun
     ["555"] = "Shadow Labyrinth",
     ["556"] = "Sethekk Halls",
     ["557"] = "Mana-Tombs",
     ["558"] = "Auchenai Crypts",
-    ["560"] = "The Underbog",
-    ["562"] = "Blade's Edge Arena",
+    -- TBC dungeons — Sunwell Isle
+    ["585"] = "Magisters' Terrace",
+    -- TBC raids
+    ["532"] = "Karazhan",
+    ["534"] = "The Battle for Mount Hyjal",
+    ["544"] = "Magtheridon's Lair",
+    ["548"] = "Serpentshrine Cavern",
+    ["550"] = "The Eye",
     ["564"] = "Black Temple",
     ["565"] = "Gruul's Lair",
     ["568"] = "Zul'Aman",
-    ["572"] = "Ruins of Lordaeron",
     ["580"] = "Sunwell Plateau",
 }
 
@@ -65,7 +81,7 @@ local function getAreaName(mapId)
         if info and info.name then return info.name end
     end
     local key = tostring(mapId)
-    if GUID_MAP_NAMES[key] then return GUID_MAP_NAMES[key] end
+    if GUID_MAP_NAMES[key] then return GUID_MAP_NAMES[key] .. "[" .. key .. "]" end
     return "Area " .. key
 end
 
