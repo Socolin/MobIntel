@@ -24,6 +24,7 @@ jobs:
                     --exclude='.github' \
                     --exclude='.idea' \
                     --exclude='.vscode' \
+                    --exclude='dist' \
                     . dist/MobIntel/
           cd dist
           zip -r MobIntel-${{ steps.version.outputs.VERSION }}.zip MobIntel/
