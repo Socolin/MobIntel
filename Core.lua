@@ -26,6 +26,11 @@ function MobIntel.utils.getTargetNpcName()
     return UnitName("target")
 end
 
+local playerGuid = UnitGUID("player")
+function MobIntel.utils.getCurrentPlayerGuid()
+    return playerGuid
+end
+
 function MobIntel.utils.createRandomId()
     return time() .. "_" .. math.random(1, 999999)
 end
@@ -130,4 +135,13 @@ function MobIntel.utils.formatNote(text, ident)
         return "{spell:" .. id .. "}"
     end)
     return ident .. replaced:gsub("\n", "\n" .. ident)
+end
+
+
+function MobIntel.utils.splitIntoChunks(str, chunkSize)
+    local chunks = {}
+    for i = 1, #str, chunkSize do
+        table.insert(chunks, string.sub(str, i, i + chunkSize - 1))
+    end
+    return chunks
 end

@@ -5,6 +5,7 @@
 ## SavedVariables: MobIntelDB
 
 Core.lua
+Event.lua
 Data.lua
 Command.lua
 Commands/CommandAdd.lua
@@ -15,3 +16,4 @@ Tooltip.lua
 Area.lua
 Config.lua
 MinimapButton.lua
+Sharing.lua

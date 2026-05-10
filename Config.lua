@@ -1,18 +1,3 @@
-
-local function deleteNote(npcId, noteId)
-    local creatureData = MobIntelDB.creature[npcId]
-    if not creatureData then return end
-    for i, note in ipairs(creatureData.notes) do
-        if note.id == noteId then
-            table.remove(creatureData.notes, i)
-            if #creatureData.notes == 0 then
-                MobIntelDB.creature[npcId] = nil
-            end
-            return
-        end
-    end
-end
-
 -- GUID map IDs are old-style continent/instance IDs, not C_Map UI map IDs
 local GUID_MAP_NAMES = {
     ["0"]   = "Eastern Kingdoms",
@@ -346,7 +331,7 @@ StaticPopupDialogs["MOBINTEL_CONFIRM_DELETE_NOTE"] = {
     button1 = "Yes",
     button2 = "No",
     OnAccept = function(self, data)
-        deleteNote(data.npcId, data.noteId)
+        MobIntel.data.creature.deleteNote(data.npcId, data.noteId)
         if data.onDeleted then data.onDeleted() end
     end,
     timeout = 0,
@@ -459,8 +444,9 @@ local function createNotesPanel(parent)
         sharedCheck:SetSize(20, 20)
         sharedCheck:SetPoint("RIGHT", f, "RIGHT", -4, 0)
         sharedCheck:SetChecked(note.shared == true)
+        sharedCheck:SetEnabled(note.author == MobIntel.utils.getCurrentPlayerGuid())
         sharedCheck:SetScript("OnClick", function(self)
-            note.shared = self:GetChecked()
+            MobIntel.data.creature.updateNoteShared(note, self:GetChecked())
         end)
 
         local sharedLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -483,10 +469,10 @@ local function createNotesPanel(parent)
         editBtn:SetSize(50, 22)
         editBtn:SetPoint("RIGHT", deleteBtn, "LEFT", -4, 0)
         editBtn:SetText("Edit")
+        editBtn:SetEnabled(note.author == MobIntel.utils.getCurrentPlayerGuid())
         editBtn:SetScript("OnClick", function()
             editDialog:open(note.text, function(newText)
-                note.text = newText
-                note.lastEditDate = time()
+                MobIntel.data.creature.updateNoteText(note, newText)
                 onRefresh()
             end)
         end)

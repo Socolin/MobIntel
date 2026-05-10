@@ -22,6 +22,11 @@
         "PanelTemplates_SetNumTabs",
         "PanelTemplates_SelectTab",
         "StaticPopupDialogs",
-        "StaticPopup_Show"
+        "StaticPopup_Show",
+        "UnitPopupMenus",
+        "UIDropDownMenu_AddButton",
+        "UIDropDownMenu_CreateInfo",
+        "WHISPER",
+        "EDIT"
     ]
 }

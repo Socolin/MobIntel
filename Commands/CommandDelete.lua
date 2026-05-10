@@ -19,10 +19,10 @@ function MobIntel.commands.deleteNpcNote(args)
     local creatureNotes = MobIntel.data.creature.getNotes(npcId)
     if not creatureNotes then return end
     if creatureNotes then
-        table.remove(creatureNotes.notes, tonumber(noteNumber))
-        if #creatureNotes.notes == 0
+        local note = creatureNotes.notes[tonumber(noteNumber)]
+        if note
         then
-            MobIntel.data.creature.clearNotes(npcId)
+            MobIntel.data.creature.deleteNote(npcId, note.id)
         end
     end
 
