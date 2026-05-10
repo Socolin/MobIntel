@@ -20,7 +20,7 @@ function MobIntel.data.creature.createNote(npcInfo, npcName, text)
     creatureNote.text = text
     creatureNote.npcGuid = npcInfo.guid
     creatureNote.npcId = npcInfo.npcId
-    creatureNote.mapId = npcInfo.mapId
+    creatureNote.mapId = C_Map.GetBestMapForUnit("player")
     creatureNote.npcName = npcName
     creatureNote.createdDate = time()
     creatureNote.lastEditDate = time()
@@ -37,7 +37,7 @@ function MobIntel.data.creature.createSpawnNote(npcInfo, npcName, range, text)
     creatureNote.npcGuid = npcInfo.guid
     creatureNote.text = text
     creatureNote.npcId = npcInfo.npcId
-    creatureNote.mapId = npcInfo.mapId
+    creatureNote.mapId = C_Map.GetBestMapForUnit("player")
     creatureNote.npcName = npcName
     creatureNote.createdDate = time()
     creatureNote.lastEditDate = time()

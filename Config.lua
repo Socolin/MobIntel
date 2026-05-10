@@ -74,6 +74,11 @@ local GUID_MAP_NAMES = {
 }
 
 local function getAreaName(mapId)
+    local id = tonumber(mapId)
+    if id and C_Map.GetMapInfo then
+        local info = C_Map.GetMapInfo(id)
+        if info and info.name then return info.name end
+    end
     local key = tostring(mapId)
     if GUID_MAP_NAMES[key] then return GUID_MAP_NAMES[key] end
     return "Area " .. key
@@ -207,6 +212,21 @@ local ICONS_PER_ROW = 6
 
 local pickerOnSelect = nil
 
+local COMMON_MOB_SPELLS = {
+    { id = 15284, label = "Cleave"               },
+    { id = 16856, label = "Mortal Strike"        },
+    { id = 15578, label = "Whirlwind"            },
+    { id = 22911, label = "Charge"               },
+    { id = 2880,  label = "Stun"                 },
+    { id = 700,   label = "Hibernate"            },
+    { id = 5782,  label = "Fear"                 },
+    { id = 8122,  label = "Psychic Scream"       },  -- fear (undead)
+    { id = 8599,  label = "Enrage"               },
+    { id = 6544,  label = "Heal"                 },
+    { id = 23381, label = "Greater Heal"         },
+    { id = 126,   label = "Sees through stealth" },  -- Eye of Kilrogg icon
+}
+
 local function addIconButton(texture, tooltipText, yOffset, col, spellId)
     local btn = CreateFrame("Button", nil, pickerContent)
     btn:SetPoint("TOPLEFT", pickerContent, "TOPLEFT",
@@ -245,6 +265,35 @@ local function buildIconGrid(filter)
     local yOffset = 4
     local col     = 0
 
+    -- Common mob spells shown when no filter is active
+    if not filter or filter == "" then
+        local headerF = CreateFrame("Frame", nil, pickerContent)
+        headerF:SetPoint("TOPLEFT", pickerContent, "TOPLEFT", 4, -yOffset)
+        headerF:SetSize(pickerContent:GetWidth() - 8, 18)
+        local headerL = headerF:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        headerL:SetPoint("LEFT", headerF, "LEFT", 0, 0)
+        headerL:SetText("Common mob abilities")
+        table.insert(pickerIconFrames, headerF)
+        yOffset = yOffset + 22
+
+        for _, spell in ipairs(COMMON_MOB_SPELLS) do
+            local name, _, texture = GetSpellInfo(spell.id)
+            if texture then
+                addIconButton(texture, spell.label .. (name and name ~= spell.label and (" (" .. name .. ")") or ""), yOffset, col, spell.id)
+                col = col + 1
+                if col >= ICONS_PER_ROW then
+                    col = 0
+                    yOffset = yOffset + ICON_SIZE + ICON_PADDING
+                end
+            end
+        end
+        if col > 0 then
+            col = 0
+            yOffset = yOffset + ICON_SIZE + ICON_PADDING
+        end
+        yOffset = yOffset + 6
+    end
+
     -- If the input is a number treat it as a spell ID — this reliably resolves
     -- any spell including monster-only spells not in the player's spell cache.
     -- Name lookup via GetSpellInfo only works for spells the client has cached
@@ -258,31 +307,6 @@ local function buildIconGrid(filter)
             if col >= ICONS_PER_ROW then
                 col = 0
                 yOffset = yOffset + ICON_SIZE + ICON_PADDING
-            end
-        end
-    end
-
-    -- Walk the player spellbook, filtered by name when a search term is set
-    local filterLower = filter and filter:lower() or ""
-    local numTabs = GetNumSpellTabs()
-    for tabIndex = 1, numTabs do
-        local _, _, tabOffset, tabNumEntries = GetSpellTabInfo(tabIndex)
-        for slot = tabOffset + 1, tabOffset + tabNumEntries do
-            local spellType, spellId = GetSpellBookItemInfo(slot, BOOKTYPE_SPELL)
-            if spellType == "SPELL" then
-                local spellName = GetSpellBookItemName(slot, BOOKTYPE_SPELL)
-                local texture   = GetSpellBookItemTexture(slot, BOOKTYPE_SPELL)
-                if texture and spellName then
-                    local matches = filterLower == "" or spellName:lower():find(filterLower, 1, true)
-                    if matches then
-                        addIconButton(texture, spellName, yOffset, col, spellId)
-                        col = col + 1
-                        if col >= ICONS_PER_ROW then
-                            col = 0
-                            yOffset = yOffset + ICON_SIZE + ICON_PADDING
-                        end
-                    end
-                end
             end
         end
     end
@@ -335,8 +359,18 @@ local function createNotesPanel(parent)
     local panel = CreateFrame("Frame", nil, parent)
     panel:SetAllPoints(parent)
 
+    local expandAllBtn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+    expandAllBtn:SetSize(90, 22)
+    expandAllBtn:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -28, -4)
+    expandAllBtn:SetText("Expand All")
+
+    local collapseAllBtn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+    collapseAllBtn:SetSize(90, 22)
+    collapseAllBtn:SetPoint("RIGHT", expandAllBtn, "LEFT", -4, 0)
+    collapseAllBtn:SetText("Collapse All")
+
     local scrollFrame = CreateFrame("ScrollFrame", "MobIntelNotesScrollFrame", panel, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", panel, "TOPLEFT", 5, -5)
+    scrollFrame:SetPoint("TOPLEFT", panel, "TOPLEFT", 5, -32)
     scrollFrame:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -26, 5)
 
     local content = CreateFrame("Frame", nil, scrollFrame)
@@ -349,14 +383,28 @@ local function createNotesPanel(parent)
     end)
 
     local rows = {}
+    local collapsedAreas = {}
 
-    local function addAreaHeader(yOffset, text)
-        local f = CreateFrame("Frame", nil, content)
+    local function getCurrentNoteMapId()
+        local mapId = C_Map.GetBestMapForUnit("player")
+        if mapId then return tostring(mapId) end
+        return nil
+    end
+
+    local refresh  -- forward declare so addAreaHeader can reference it
+
+    local function addAreaHeader(yOffset, text, mapId)
+        local collapsed = collapsedAreas[mapId]
+        local f = CreateFrame("Button", nil, content)
         f:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -yOffset)
         f:SetSize(content:GetWidth(), 26)
 
+        local arrow = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        arrow:SetPoint("LEFT", f, "LEFT", 4, 0)
+        arrow:SetText(collapsed and "[+]" or "[-]")
+
         local label = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-        label:SetPoint("LEFT", f, "LEFT", 4, 0)
+        label:SetPoint("LEFT", arrow, "RIGHT", 6, 0)
         label:SetText(text)
 
         local line = f:CreateTexture(nil, "ARTWORK")
@@ -365,21 +413,41 @@ local function createNotesPanel(parent)
         line:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
         line:SetColorTexture(0.6, 0.6, 0.6, 0.6)
 
+        f:SetScript("OnClick", function()
+            collapsedAreas[mapId] = not collapsedAreas[mapId]
+            refresh()
+        end)
+
         table.insert(rows, f)
         return yOffset + 30
     end
 
-    local function addCreatureHeader(yOffset, text)
+    local function addCreatureHeader(yOffset, text, npcId, npcGuid)
         local f = CreateFrame("Frame", nil, content)
         f:SetPoint("TOPLEFT", content, "TOPLEFT", 10, -yOffset)
-        f:SetSize(content:GetWidth() - 10, 20)
+        f:SetSize(content:GetWidth() - 10, 22)
+
+        local addBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+        addBtn:SetSize(80, 18)
+        addBtn:SetPoint("RIGHT", f, "RIGHT", -4, 0)
+        addBtn:SetText("Add Note")
+        addBtn:SetScript("OnClick", function()
+            editDialog:open("", function(newText)
+                if newText and newText ~= "" then
+                    local npcInfo = { guid = npcGuid, npcId = npcId }
+                    local note = MobIntel.data.creature.createNote(npcInfo, text, newText)
+                    MobIntel.data.creature.addNote(note)
+                    refresh()
+                end
+            end)
+        end)
 
         local label = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         label:SetPoint("LEFT", f, "LEFT", 4, 0)
         label:SetText("|cFFFFD100" .. text .. "|r")
 
         table.insert(rows, f)
-        return yOffset + 22
+        return yOffset + 24
     end
 
     local function addNoteRow(yOffset, note, npcId, onRefresh)
@@ -418,6 +486,7 @@ local function createNotesPanel(parent)
         editBtn:SetScript("OnClick", function()
             editDialog:open(note.text, function(newText)
                 note.text = newText
+                note.lastEditDate = time()
                 onRefresh()
             end)
         end)
@@ -432,13 +501,13 @@ local function createNotesPanel(parent)
         textLabel:SetPoint("RIGHT", editBtn, "LEFT", -8, 0)
         textLabel:SetJustifyH("LEFT")
         textLabel:SetMaxLines(1)
-        textLabel:SetText(MobIntel.utils.formatNote(note.text or "", ""))
+        textLabel:SetText(MobIntel.utils.formatNote((note.text or ""):match("([^\n]*)") or "", ""))
 
         table.insert(rows, f)
         return yOffset + 28
     end
 
-    local function refresh()
+    refresh = function()
         for _, row in ipairs(rows) do
             row:Hide()
         end
@@ -465,26 +534,51 @@ local function createNotesPanel(parent)
             end
         end
 
+        local currentMapId = getCurrentNoteMapId()
+
+        for _, mapId in ipairs(areaOrder) do
+            if collapsedAreas[mapId] == nil then
+                collapsedAreas[mapId] = (mapId ~= currentMapId)
+            end
+        end
+
         local yOffset = 4
         for _, mapId in ipairs(areaOrder) do
-            yOffset = addAreaHeader(yOffset, getAreaName(mapId))
+            yOffset = addAreaHeader(yOffset, getAreaName(mapId), mapId)
 
-            local creatureNames = {}
-            for name in pairs(byArea[mapId]) do
-                table.insert(creatureNames, name)
-            end
-            table.sort(creatureNames)
+            if not collapsedAreas[mapId] then
+                local creatureNames = {}
+                for name in pairs(byArea[mapId]) do
+                    table.insert(creatureNames, name)
+                end
+                table.sort(creatureNames)
 
-            for _, creatureName in ipairs(creatureNames) do
-                yOffset = addCreatureHeader(yOffset, creatureName)
-                for _, entry in ipairs(byArea[mapId][creatureName]) do
-                    yOffset = addNoteRow(yOffset, entry.note, entry.npcId, refresh)
+                for _, creatureName in ipairs(creatureNames) do
+                    local entries = byArea[mapId][creatureName]
+                    yOffset = addCreatureHeader(yOffset, creatureName, entries[1].npcId, entries[1].note.npcGuid)
+                    for _, entry in ipairs(entries) do
+                        yOffset = addNoteRow(yOffset, entry.note, entry.npcId, refresh)
+                    end
                 end
             end
         end
 
         content:SetHeight(math.max(yOffset + 4, 1))
     end
+
+    expandAllBtn:SetScript("OnClick", function()
+        for mapId in pairs(collapsedAreas) do
+            collapsedAreas[mapId] = false
+        end
+        refresh()
+    end)
+
+    collapseAllBtn:SetScript("OnClick", function()
+        for mapId in pairs(collapsedAreas) do
+            collapsedAreas[mapId] = true
+        end
+        refresh()
+    end)
 
     panel.refresh = refresh
     return panel
