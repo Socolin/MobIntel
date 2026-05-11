@@ -257,7 +257,7 @@ function MobIntel.data.sharing.getLastEditDateFromSource(sourcePlayerGuid)
 end
 
 ---@param receivedNotes SharingNote[]
-function MobIntel.data.mergeReceivedNotes(receivedNotes)
+function MobIntel.data.sharing.mergeReceivedNotes(receivedNotes)
     for i, value in ipairs(receivedNotes) do
         if value.type == "creature"
         then
@@ -341,8 +341,8 @@ function MobIntel.data.area.addNote(areaNote)
         }
         MobIntelDB.area[areaNote.mapId] = areaNotes
     end
-
     table.insert(areaNotes.notes, areaNote)
+    MobIntelDB.lastEditDate = time()
 end
 
 ---@param mapId number
