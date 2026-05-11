@@ -33,6 +33,16 @@ frame:SetScript("OnEvent", function(self, event, addonName)
     --         end
     --     end
     -- end
+
+    for npcId, creatureData in pairs(MobIntelDB.creature) do
+        for j, note in ipairs(creatureData.notes) do
+            if note.author == MobIntel.utils.getCurrentPlayerGuid()
+            then
+                MobIntelDB.lastEditDate = max(MobIntelDB.lastEditDate, note.lastEditDate)
+            end
+        end
+    end
+
 end)
 
 ---@class NpcInfo
@@ -296,7 +306,7 @@ function MobIntel.data.sharing.getNotesEditedSince(minEditDate)
 
     for npcId, creatureData in pairs(MobIntelDB.creature) do
         for j, note in ipairs(creatureData.notes) do
-            if note.author ~= MobIntel.utils.getCurrentPlayerGuid() and note.lastEditDate > minEditDate
+            if note.author == MobIntel.utils.getCurrentPlayerGuid() and note.lastEditDate > minEditDate
             then
                 table.insert(notesToSend, {type = "creature", note = note})
             end
