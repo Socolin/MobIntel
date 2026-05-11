@@ -19,17 +19,13 @@ frame:SetScript("OnEvent", function(self, event, addonName)
 
     -- for npcId, creatureData in pairs(MobIntelDB.creature) do
     --     for j, note in ipairs(creatureData.notes) do
-    --         if not note.createdDate
+    --         if note.mapId == 270 or note.mapId == 269
     --         then
-    --             note.createdDate = time()
+    --             note.mapId = 552
     --         end
-    --         if not note.lastEditDate1
+    --         if note.mapId == 266
     --         then
-    --             note.lastEditDate = note.createdDate
-    --         end
-    --         if not note.authorName
-    --         then
-    --             note.authorName = UnitName("Player")
+    --             note.mapId = 553
     --         end
     --     end
     -- end
@@ -64,6 +60,7 @@ end)
 ---@field npcGuid string|nil
 ---@field npcId string
 ---@field mapId number
+---@field playerMapId number|nil
 ---@field npcName string
 ---@field createdDate number
 ---@field lastEditDate number
@@ -113,7 +110,8 @@ function MobIntel.data.creature.createNote(npcInfo, npcName, text)
     creatureNote.text = text
     creatureNote.npcGuid = npcInfo.guid
     creatureNote.npcId = npcInfo.npcId
-    creatureNote.mapId = C_Map.GetBestMapForUnit("player")
+    creatureNote.mapId = npcInfo.mapId
+    creatureNote.playerMapId = C_Map.GetBestMapForUnit("player")
     creatureNote.npcName = npcName
     creatureNote.createdDate = time()
     creatureNote.lastEditDate = time()
@@ -135,7 +133,8 @@ function MobIntel.data.creature.createSpawnNote(npcInfo, npcName, range, text)
     creatureNote.npcGuid = npcInfo.guid
     creatureNote.text = text
     creatureNote.npcId = npcInfo.npcId
-    creatureNote.mapId = C_Map.GetBestMapForUnit("player")
+    creatureNote.mapId = npcInfo.mapId
+    creatureNote.playerMapId = C_Map.GetBestMapForUnit("player")
     creatureNote.npcName = npcName
     creatureNote.createdDate = time()
     creatureNote.lastEditDate = time()

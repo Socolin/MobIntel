@@ -81,7 +81,7 @@ local function getAreaName(mapId)
         if info and info.name then return info.name end
     end
     local key = tostring(mapId)
-    if GUID_MAP_NAMES[key] then return GUID_MAP_NAMES[key] .. "[" .. key .. "]" end
+    if GUID_MAP_NAMES[key] then return GUID_MAP_NAMES[key] end
     return "Area " .. key
 end
 
@@ -231,7 +231,7 @@ local COMMON_MOB_SPELLS = {
 local function addIconButton(texture, tooltipText, yOffset, col, spellId)
     local btn = CreateFrame("Button", nil, pickerContent)
     btn:SetPoint("TOPLEFT", pickerContent, "TOPLEFT",
-        4 + col * (ICON_SIZE + ICON_PADDING), -yOffset)
+    4 + col * (ICON_SIZE + ICON_PADDING), -yOffset)
     btn:SetSize(ICON_SIZE, ICON_SIZE)
 
     local ico = btn:CreateTexture(nil, "ARTWORK")
@@ -385,13 +385,6 @@ local function createNotesPanel(parent)
 
     local rows = {}
     local collapsedAreas = {}
-
-    local function getCurrentNoteMapId()
-        local mapId = C_Map.GetBestMapForUnit("player")
-        if mapId then return tostring(mapId) end
-        return nil
-    end
-
     local refresh  -- forward declare so addAreaHeader can reference it
 
     local function addAreaHeader(yOffset, text, mapId)
@@ -536,13 +529,27 @@ local function createNotesPanel(parent)
             end
         end
 
-        local currentMapId = getCurrentNoteMapId()
+        local currentMapName = ""
+        local currentMapId = C_Map.GetBestMapForUnit("player")
+        if currentMapId
+        then
+            local currentMapInfo = C_Map.GetMapInfo(currentMapId)
+            if currentMapInfo
+            then
+                currentMapName = currentMapInfo.name
+            end
+        end
 
         for _, mapId in ipairs(areaOrder) do
             if collapsedAreas[mapId] == nil then
-                collapsedAreas[mapId] = (mapId ~= currentMapId)
+                local areaName = getAreaName(mapId)
+                collapsedAreas[mapId] = not (areaName == currentMapName)
             end
         end
+
+        table.sort(areaOrder, function(a, b)
+            return getAreaName(a) < getAreaName(b)
+        end)
 
         local yOffset = 4
         for _, mapId in ipairs(areaOrder) do

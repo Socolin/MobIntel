@@ -3,6 +3,8 @@ MobIntel.sharing.actionQueue = {}
 
 local pluginPrefix = "MobIntel"
 local playerName = UnitName("player")
+local realm = GetRealmName()
+local fullPlayerName = playerName .. "-" .. realm
 local playerGuid = UnitGUID("player")
 local receivingNotes = {}
 
@@ -10,7 +12,7 @@ local function OnEvent(self, event, ...)
 	if event == "CHAT_MSG_ADDON" then
         local prefix, text, channel, sender = ...
         if prefix ~= pluginPrefix then return end
-        if (sender == playerName) then return end
+        if (sender == fullPlayerName) then return end
 
         local opCode, messageData = strsplit("|", text, 2)
         if opCode == "HELLO" then
@@ -40,7 +42,6 @@ local function OnEvent(self, event, ...)
             if parameters
             then
                 receivingNotes[sender] = ""
-                -- FIXME
             end
         elseif opCode == "CHUNK_NOTES" then
             receivingNotes[sender] = receivingNotes[sender] .. messageData
@@ -94,6 +95,7 @@ local function OnUpdate(self, delta)
     local action = table.remove(MobIntel.sharing.actionQueue, 1)
     if action.type == "sendMessage"
     then
+        -- print(action.message, action.channel, action.target)
         local success = C_ChatInfo.SendAddonMessage(pluginPrefix, action.message, action.channel, action.target)
     if not success then
            table.insert(MobIntel.sharing.actionQueue, 1, action)
