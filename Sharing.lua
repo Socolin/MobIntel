@@ -15,6 +15,9 @@ local function OnEvent(self, event, ...)
         local opCode, messageData = strsplit("|", text, 2)
         if opCode == "HELLO" then
             MobIntel.sharing.enqueueMessage(sender, "SYNC_STATUS|" .. C_EncodingUtil.SerializeJSON({playerGuid = playerGuid, lastEditDate = MobIntel.data.getLastEditDate()}))
+            MobIntel.sharing.enqueueMessage(sender, "HELLO2")
+        elseif opCode == "HELLO2" then
+            MobIntel.sharing.enqueueMessage(sender, "SYNC_STATUS|" .. C_EncodingUtil.SerializeJSON({playerGuid = playerGuid, lastEditDate = MobIntel.data.getLastEditDate()}))
         elseif opCode == "SYNC_STATUS" then
             local parameters = C_EncodingUtil.DeserializeJSON(messageData)
             if parameters
