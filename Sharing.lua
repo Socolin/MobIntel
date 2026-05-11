@@ -60,24 +60,24 @@ local function OnEvent(self, event, ...)
 end
 
 MobIntel.event.on("CREATURE_NOTE_ADDED", function (note)
-    local notesToSend = {}
-    if not note.sharing then return end
+    if not note.shared then return end
     if note.author ~= playerGuid then return end
+    local notesToSend = {}
     table.insert(notesToSend, {type = "creature", note = note})
     MobIntel.sharing.sendNotesTo(notesToSend, "GUILD")
 end)
 
 MobIntel.event.on("CREATURE_NOTE_UPDATED", function (note)
-    local notesToSend = {}
-    if not note.sharing then return end
+    if not note.shared then return end
     if note.author ~= playerGuid then return end
+    local notesToSend = {}
     table.insert(notesToSend, {type = "creature", note = note})
     MobIntel.sharing.sendNotesTo(notesToSend, "GUILD")
 end)
 
 MobIntel.event.on("CREATURE_NOTE_DELETED", function (deletedNote)
     local notesToSend = {}
-    if not deletedNote.sharing then return end
+    if not deletedNote.shared then return end
     if deletedNote.author ~= playerGuid then return end
     table.insert(notesToSend, {type = "deleted", note = deletedNote})
     MobIntel.sharing.sendNotesTo(notesToSend, "GUILD")
