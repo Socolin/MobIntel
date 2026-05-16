@@ -15,6 +15,7 @@ local function OnEvent(self, event, ...)
         if (sender == fullPlayerName) then return end
 
         local opCode, messageData = strsplit("|", text, 2)
+        -- print(event, opCode, sender)
         if opCode == "HELLO" then
             MobIntel.sharing.enqueueMessage(sender, "SYNC_STATUS|" .. C_EncodingUtil.SerializeJSON({playerGuid = playerGuid, lastEditDate = MobIntel.data.getLastEditDate()}))
             MobIntel.sharing.enqueueMessage(sender, "HELLO2")
@@ -46,7 +47,7 @@ local function OnEvent(self, event, ...)
         elseif opCode == "CHUNK_NOTES" then
             receivingNotes[sender] = receivingNotes[sender] .. messageData
         elseif opCode == "END_NOTES" then
-            local recievedNotes = C_EncodingUtil.DeserializeCBOR(receivingNotes[sender])
+            local recievedNotes = C_EncodingUtil.DeserializeCBOR(C_EncodingUtil.DecodeBase64(receivingNotes[sender]))
             MobIntel.data.sharing.mergeReceivedNotes(recievedNotes)
             receivingNotes[sender] = nil
         end
@@ -97,13 +98,11 @@ local function OnUpdate(self, delta)
     then
         -- print(action.message, action.channel, action.target)
         local success = C_ChatInfo.SendAddonMessage(pluginPrefix, action.message, action.channel, action.target)
-    if not success then
+        if not success then
            table.insert(MobIntel.sharing.actionQueue, 1, action)
         end
     end
 end
-
--- C_EncodingUtil.SerializeCBOR()
 
 local f = CreateFrame("Frame")
 f:RegisterEvent("CHAT_MSG_ADDON")
@@ -117,7 +116,7 @@ function MobIntel.sharing.sendNotesTo(notes, target)
         return
     end
     -- print("Sending ", #notes, " to ", target)
-    local serializedNotes = C_EncodingUtil.SerializeCBOR(notes)
+    local serializedNotes = C_EncodingUtil.EncodeBase64(C_EncodingUtil.SerializeCBOR(notes))
     local chunks = MobIntel.utils.splitIntoChunks(serializedNotes, 220)
 
     MobIntel.sharing.enqueueMessage(target, "START_NOTES|" .. C_EncodingUtil.SerializeJSON({lastEditDate = MobIntel.data.getLastEditDate(), count = #chunks}))
